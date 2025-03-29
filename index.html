@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inventory Barcode Scanner</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Inventory Scanner">
+  <link rel="apple-touch-icon" href="icon.png">
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 1rem;
+    }
+    #reader {
+      width: 100%;
+      max-width: 400px;
+      margin: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 0.5rem;
+    }
+    input, select, button {
+      margin: 0.5rem 0;
+      padding: 0.5rem;
+      width: 100%;
+    }
+  </style>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+</head>
+<body>
+  <h1>Inventory Barcode Scanner</h1>
+
+  <div id="reader"></div>
+
+  <div id="actions" style="display:none">
+    <div id="existing-item-actions" style="display:none">
+      <p>Item found: <strong id="found-name"></strong> (Quantity: <span id="found-qty"></span>)</p>
+      <button onclick="updateQuantity('add')">Add Quantity</button>
+      <button onclick="updateQuantity('remove')">Remove Quantity</button>
+    </div>
+
+    <div id="new-item-form" style="display:none">
+      <p>New item detected. Please enter details:</p>
+      <input id="new-name" placeholder="Item Name">
+      <input id="new-qty" placeholder="Quantity" type="number">
+      <input id="new-type" placeholder="Type">
+      <button onclick="addNewItem()">Add Item</button>
+    </div>
+  </div>
+
+  <h2>Inventory Table</h2>
+  <table id="inventory-table">
+    <thead>
+      <tr><th>Barcode</th><th>Name</th><th>Quantity</th><th>Type</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    let scannedBarcode = null;
+    let inventory = JSON.parse(localStorage.getItem('inventory')) || {};
+
+    function renderTable() {
+      const tbody = document.querySelector("#inventory-table tbody");
+      tbody.innerHTML = '';
+      Object.entries(inventory).forEach(([barcode, item]) => {
+        const row = `<tr><td>${barcode}</td><td>${item.name}</td><td>${item.quantity}</td><td>${item.type}</td></tr>`;
+        tbody.insertAdjacentHTML('beforeend', row);
+      });
+    }
+
+    function handleScanSuccess(decodedText) {
+      scannedBarcode = decodedText;
+      document.getElementById('actions').style.display = 'block';
+      if (inventory[scannedBarcode]) {
+        document.getElementById('existing-item-actions').style.display = 'block';
+        document.getElementById('new-item-form').style.display = 'none';
+        document.getElementById('found-name').textContent = inventory[scannedBarcode].name;
+        document.getElementById('found-qty').textContent = inventory[scannedBarcode].quantity;
+      } else {
+        document.getElementById('existing-item-actions').style.display = 'none';
+        document.getElementById('new-item-form').style.display = 'block';
+      }
+    }
+
+    function updateQuantity(action) {
+      let delta = prompt(`Enter quantity to ${action}:`, "1");
+      if (delta !== null) {
+        delta = parseInt(delta);
+        if (isNaN(delta)) return;
+        let current = inventory[scannedBarcode].quantity;
+        inventory[scannedBarcode].quantity = Math.max(0, action === 'add' ? current + delta : current - delta);
+        saveAndRefresh();
+      }
+    }
+
+    function addNewItem() {
+      const name = document.getElementById('new-name').value;
+      const quantity = parseInt(document.getElementById('new-qty').value);
+      const type = document.getElementById('new-type').value;
+      if (!name || isNaN(quantity) || !type) {
+        alert("Please fill all fields.");
+        return;
+      }
+      inventory[scannedBarcode] = { name, quantity, type };
+      saveAndRefresh();
+    }
+
+    function saveAndRefresh() {
+      localStorage.setItem('inventory', JSON.stringify(inventory));
+      document.getElementById('actions').style.display = 'none';
+      document.getElementById('existing-item-actions').style.display = 'none';
+      document.getElementById('new-item-form').style.display = 'none';
+      renderTable();
+    }
+
+    renderTable();
+
+    const qr = new Html5Qrcode("reader");
+qr.start(
+  { facingMode: "environment" }, // 👈 This opens the rear camera
+  {
+    fps: 10,
+    qrbox: 250
+  },
+  handleScanSuccess
+).catch(err => {
+  console.error("Camera start error:", err);
+});
+  </script>
+</body>
+</html>

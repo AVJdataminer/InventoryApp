@@ -73,6 +73,9 @@
     <option value="">All Locations</option>
   </select>
 
+  <button onclick="exportToCSV()">Export Inventory (CSV)</button>
+  <input type="file" id="csv-file" accept=".csv" onchange="importFromCSV(event)">
+
   <table id="inventory-table">
     <thead>
       <tr><th>Barcode</th><th>Name</th><th>Quantity</th><th>Type</th><th>Location</th></tr>
@@ -169,6 +172,52 @@
 
       inventory[scannedBarcode] = { name, quantity, type, location };
       saveAndRefresh();
+    }
+
+    function exportToCSV() {
+      const headers = ['Barcode', 'Name', 'Quantity', 'Type', 'Location'];
+      const rows = Object.entries(inventory).map(([barcode, item]) => [
+        barcode,
+        item.name,
+        item.quantity,
+        item.type,
+        item.location
+      ]);
+
+      let csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", "inventory.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function importFromCSV(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const lines = e.target.result.split("\n");
+        lines.shift(); // remove header
+        lines.forEach(line => {
+          const [barcode, name, quantity, type, location] = line.split(",");
+          if (barcode && name && type && location) {
+            inventory[barcode] = {
+              name: name.trim(),
+              quantity: parseInt(quantity),
+              type: type.trim(),
+              location: location.trim()
+            };
+          }
+        });
+        saveAndRefresh();
+      };
+      reader.readAsText(file);
     }
 
     function saveAndRefresh() {

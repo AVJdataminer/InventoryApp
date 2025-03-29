@@ -19,6 +19,7 @@
       height: 320px;
       margin: auto;
       border: 1px solid #ccc;
+      display: none;
     }
     table {
       width: 100%;
@@ -40,6 +41,13 @@
 <body>
   <h1>Inventory Barcode Scanner</h1>
 
+  <label for="session-location">Select Location for This Session:</label>
+  <select id="session-location">
+    <option value="">-- Choose Location --</option>
+  </select>
+  <input id="add-session-location" placeholder="Or add a new location">
+  <button onclick="startScanner()">Start Scanning</button>
+
   <div id="reader"></div>
 
   <div id="actions" style="display:none">
@@ -55,10 +63,6 @@
       <input id="new-name" placeholder="Item Name">
       <input id="new-qty" placeholder="Quantity" type="number">
       <input id="new-type" placeholder="Type">
-      <select id="new-location">
-        <option value="">Select Location</option>
-      </select>
-      <input id="add-location" placeholder="Or add a new location">
       <button onclick="addNewItem()">Add Item</button>
     </div>
   </div>
@@ -80,19 +84,22 @@
     let scannedBarcode = null;
     let inventory = JSON.parse(localStorage.getItem('inventory')) || {};
     let defaultLocations = ["barn", "basecamp", "vending", "house"];
+    let sessionLocation = "";
+    let qr;
 
     function populateLocationDropdowns() {
       const allLocations = new Set(defaultLocations);
       Object.values(inventory).forEach(item => allLocations.add(item.location));
-      const filter = document.getElementById("location-filter");
-      const selector = document.getElementById("new-location");
 
+      const sessionSelect = document.getElementById("session-location");
+      const filter = document.getElementById("location-filter");
+
+      sessionSelect.innerHTML = '<option value="">-- Choose Location --</option>';
       filter.innerHTML = '<option value="">All Locations</option>';
-      selector.innerHTML = '<option value="">Select Location</option>';
       allLocations.forEach(loc => {
         const opt = `<option value="${loc}">${loc.charAt(0).toUpperCase() + loc.slice(1)}</option>`;
+        sessionSelect.insertAdjacentHTML('beforeend', opt);
         filter.insertAdjacentHTML('beforeend', opt);
-        selector.insertAdjacentHTML('beforeend', opt);
       });
     }
 
@@ -137,10 +144,7 @@
       const name = document.getElementById('new-name').value;
       const quantity = parseInt(document.getElementById('new-qty').value);
       const type = document.getElementById('new-type').value;
-      let location = document.getElementById('new-location').value;
-      const newLoc = document.getElementById('add-location').value;
-
-      if (newLoc) location = newLoc;
+      const location = sessionLocation;
 
       if (!name || isNaN(quantity) || !type || !location) {
         alert("Please fill all fields.");
@@ -176,24 +180,33 @@
       renderTable();
     }
 
+    function startScanner() {
+      const selected = document.getElementById('session-location').value;
+      const newLoc = document.getElementById('add-session-location').value;
+      sessionLocation = newLoc || selected;
+
+      if (!sessionLocation) {
+        alert("Please select or add a location.");
+        return;
+      }
+
+      document.getElementById('reader').style.display = 'block';
+
+      if (!qr) qr = new Html5Qrcode("reader");
+
+      qr.start(
+        { facingMode: { exact: "environment" } },
+        { fps: 10, qrbox: 250 },
+        handleScanSuccess,
+        errorMessage => {}
+      ).catch(err => {
+        console.error("Camera error:", err);
+        alert("Camera error: " + err);
+      });
+    }
+
     populateLocationDropdowns();
     renderTable();
-
-    const qr = new Html5Qrcode("reader");
-    qr.start(
-      { facingMode: { exact: "environment" } },
-      {
-        fps: 10,
-        qrbox: 250
-      },
-      handleScanSuccess,
-      errorMessage => {
-        // Optional: console.log(errorMessage);
-      }
-    ).catch(err => {
-      console.error("Camera error:", err);
-      alert("Camera error: " + err);
-    });
   </script>
 </body>
 </html>

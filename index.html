@@ -57,11 +57,8 @@
       <input id="new-type" placeholder="Type">
       <select id="new-location">
         <option value="">Select Location</option>
-        <option value="barn">Barn</option>
-        <option value="basecamp">Basecamp</option>
-        <option value="vending">Vending</option>
-        <option value="house">House</option>
       </select>
+      <input id="add-location" placeholder="Or add a new location">
       <button onclick="addNewItem()">Add Item</button>
     </div>
   </div>
@@ -70,10 +67,6 @@
   <label for="location-filter">Filter by location:</label>
   <select id="location-filter" onchange="renderTable()">
     <option value="">All Locations</option>
-    <option value="barn">Barn</option>
-    <option value="basecamp">Basecamp</option>
-    <option value="vending">Vending</option>
-    <option value="house">House</option>
   </select>
 
   <table id="inventory-table">
@@ -86,6 +79,22 @@
   <script>
     let scannedBarcode = null;
     let inventory = JSON.parse(localStorage.getItem('inventory')) || {};
+    let defaultLocations = ["barn", "basecamp", "vending", "house"];
+
+    function populateLocationDropdowns() {
+      const allLocations = new Set(defaultLocations);
+      Object.values(inventory).forEach(item => allLocations.add(item.location));
+      const filter = document.getElementById("location-filter");
+      const selector = document.getElementById("new-location");
+
+      filter.innerHTML = '<option value="">All Locations</option>';
+      selector.innerHTML = '<option value="">Select Location</option>';
+      allLocations.forEach(loc => {
+        const opt = `<option value="${loc}">${loc.charAt(0).toUpperCase() + loc.slice(1)}</option>`;
+        filter.insertAdjacentHTML('beforeend', opt);
+        selector.insertAdjacentHTML('beforeend', opt);
+      });
+    }
 
     function renderTable() {
       const tbody = document.querySelector("#inventory-table tbody");
@@ -128,7 +137,10 @@
       const name = document.getElementById('new-name').value;
       const quantity = parseInt(document.getElementById('new-qty').value);
       const type = document.getElementById('new-type').value;
-      const location = document.getElementById('new-location').value;
+      let location = document.getElementById('new-location').value;
+      const newLoc = document.getElementById('add-location').value;
+
+      if (newLoc) location = newLoc;
 
       if (!name || isNaN(quantity) || !type || !location) {
         alert("Please fill all fields.");
@@ -144,7 +156,7 @@
       const name = prompt("Edit item name:", item.name);
       const quantity = parseInt(prompt("Edit quantity:", item.quantity));
       const type = prompt("Edit type:", item.type);
-      const location = prompt("Edit location (barn, basecamp, vending, house):", item.location);
+      const location = prompt("Edit location:", item.location);
 
       if (!name || isNaN(quantity) || !type || !location) {
         alert("All fields are required.");
@@ -160,9 +172,11 @@
       document.getElementById('actions').style.display = 'none';
       document.getElementById('existing-item-actions').style.display = 'none';
       document.getElementById('new-item-form').style.display = 'none';
+      populateLocationDropdowns();
       renderTable();
     }
 
+    populateLocationDropdowns();
     renderTable();
 
     const qr = new Html5Qrcode("reader");

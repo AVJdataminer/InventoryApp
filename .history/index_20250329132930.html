@@ -47,7 +47,6 @@
       <p>Item found: <strong id="found-name"></strong> (Quantity: <span id="found-qty"></span>)</p>
       <button onclick="updateQuantity('add')">Add Quantity</button>
       <button onclick="updateQuantity('remove')">Remove Quantity</button>
-      <button onclick="editItem()">Edit Item</button>
     </div>
 
     <div id="new-item-form" style="display:none">
@@ -67,15 +66,6 @@
   </div>
 
   <h2>Inventory Table</h2>
-  <label for="location-filter">Filter by location:</label>
-  <select id="location-filter" onchange="renderTable()">
-    <option value="">All Locations</option>
-    <option value="barn">Barn</option>
-    <option value="basecamp">Basecamp</option>
-    <option value="vending">Vending</option>
-    <option value="house">House</option>
-  </select>
-
   <table id="inventory-table">
     <thead>
       <tr><th>Barcode</th><th>Name</th><th>Quantity</th><th>Type</th><th>Location</th></tr>
@@ -90,12 +80,9 @@
     function renderTable() {
       const tbody = document.querySelector("#inventory-table tbody");
       tbody.innerHTML = '';
-      const filter = document.getElementById("location-filter").value;
       Object.entries(inventory).forEach(([barcode, item]) => {
-        if (!filter || item.location === filter) {
-          const row = `<tr><td>${barcode}</td><td>${item.name}</td><td>${item.quantity}</td><td>${item.type}</td><td>${item.location}</td></tr>`;
-          tbody.insertAdjacentHTML('beforeend', row);
-        }
+        const row = `<tr><td>${barcode}</td><td>${item.name}</td><td>${item.quantity}</td><td>${item.type}</td><td>${item.location}</td></tr>`;
+        tbody.insertAdjacentHTML('beforeend', row);
       });
     }
 
@@ -132,22 +119,6 @@
 
       if (!name || isNaN(quantity) || !type || !location) {
         alert("Please fill all fields.");
-        return;
-      }
-
-      inventory[scannedBarcode] = { name, quantity, type, location };
-      saveAndRefresh();
-    }
-
-    function editItem() {
-      const item = inventory[scannedBarcode];
-      const name = prompt("Edit item name:", item.name);
-      const quantity = parseInt(prompt("Edit quantity:", item.quantity));
-      const type = prompt("Edit type:", item.type);
-      const location = prompt("Edit location (barn, basecamp, vending, house):", item.location);
-
-      if (!name || isNaN(quantity) || !type || !location) {
-        alert("All fields are required.");
         return;
       }
 

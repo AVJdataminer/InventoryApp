@@ -68,6 +68,15 @@
     </div>
   </div>
 
+  <div id="manual-entry">
+    <h3>Add Item Without Barcode</h3>
+    <input id="manual-id" placeholder="Item ID (unique text key)">
+    <input id="manual-name" placeholder="Item Name">
+    <input id="manual-qty" placeholder="Quantity" type="number">
+    <input id="manual-type" placeholder="Type">
+    <button onclick="addManualItem()">Add Manual Item</button>
+  </div>
+
   <h2>Inventory Table</h2>
   <label for="location-filter">Filter by location:</label>
   <select id="location-filter" onchange="renderTable()">
@@ -161,6 +170,26 @@
 
       inventory[scannedBarcode] = { name, quantity, type, location };
       saveAndRefresh();
+    }
+
+    function addManualItem() {
+      const id = document.getElementById('manual-id').value.trim();
+      const name = document.getElementById('manual-name').value.trim();
+      const quantity = parseInt(document.getElementById('manual-qty').value);
+      const type = document.getElementById('manual-type').value.trim();
+      const location = sessionLocation;
+
+      if (!id || !name || isNaN(quantity) || !type || !location) {
+        alert("Please fill all fields including a unique ID.");
+        return;
+      }
+
+      inventory[id] = { name, quantity, type, location };
+      saveAndRefresh();
+      document.getElementById('manual-id').value = '';
+      document.getElementById('manual-name').value = '';
+      document.getElementById('manual-qty').value = '';
+      document.getElementById('manual-type').value = '';
     }
 
     function editItem() {

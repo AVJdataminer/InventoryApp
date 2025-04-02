@@ -171,7 +171,10 @@
       const name = document.getElementById('new-name').value;
       const quantity = parseInt(document.getElementById('new-qty').value);
       const type = document.getElementById('new-type').value;
-      const location = sessionLocation;
+      const selected = document.getElementById('session-location').value;
+      const newLoc = document.getElementById('add-session-location').value;
+      const location = newLoc || selected;
+
 
       if (!name || isNaN(quantity) || !type || !location) {
         alert("Please fill all fields.");
